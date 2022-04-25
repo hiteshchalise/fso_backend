@@ -75,6 +75,21 @@ app.post('/api/persons', (req, res, next) => {
         .catch(error => next(error));
 })
 
+app.put('/api/persons/:id', (req, res, next) => {
+    if (!req.body.name) return res.status(400).json({ error: 'Name is missing' });
+    if (!req.body.number) return res.status(400).json({ error: 'Number is missing' });
+
+    Phonebook.findByIdAndUpdate(req.params.id, { number: req.body.number }, { new: true })
+        .then(updatedEntry => {
+            if (!updatedEntry) {
+                res.status(404).json({ error: "Name is not found on the entry." });
+            } else {
+                res.status(200).json(updatedEntry)
+            }
+        })
+        .catch(error => next(error));
+})
+
 app.delete('/api/persons/:id', (req, res, next) => {
     const id = req.params.id;
     Phonebook
