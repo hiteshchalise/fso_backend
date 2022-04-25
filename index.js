@@ -1,6 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+const { errorHandler } = require('./middlewares/errors');
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -11,6 +12,7 @@ const app = express();
 app.use(express.static('build'));
 app.use(express.json());
 app.use(cors());
+
 
 morgan.token('body', function getId(req) {
     if (req.method === "POST") return JSON.stringify(req.body);
@@ -29,7 +31,7 @@ app.use(morgan(function (tokens, req, res) {
 }));
 
 const date = new Date();
-app.get('/info', (req, res) => {
+app.get('/info', (req, res, next) => {
     Phonebook.countDocuments({})
         .then(result => {
             res.send(`<div>
@@ -37,35 +39,27 @@ app.get('/info', (req, res) => {
                     <br><br>
                     ${date}
                 </div>`);
-        }).catch(error => {
-            console.log(error);
-            res.status(500).json({ error: "some error occured" });
-        })
+        }).catch(error => next(error));
 })
 
-app.get('/api/persons', (req, res) => {
-    Phonebook.find({}).then(result => res.json(result));
+app.get('/api/persons', (req, res, next) => {
+    Phonebook.find({}).then(result => res.json(result)).catch(error => next(error));
 });
 
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', (req, res, next) => {
     Phonebook
         .findById(req.params.id)
         .then(person => {
-            console.log(person);
             if (!person) {
-                return res.status(404).json({
-                    message: `No person of id ${req.params.id} found.`
-                });
+                res.status(404).json({ message: `No person of id ${req.params.id} found.` });
+            } else {
+                res.json(person);
             }
-            res.json(person);
         })
-        .catch(error => {
-            console.log(error);
-            res.status(400).send({ error: 'malformed id' });
-        });
+        .catch(error => next(error));
 });
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
     if (!req.body.name) return res.status(400).json({ error: 'Name is missing' });
     if (!req.body.number) return res.status(400).json({ error: 'Number is missing' });
 
@@ -78,13 +72,10 @@ app.post('/api/persons', (req, res) => {
         .then(savedPhonebook => {
             res.status(201).json(savedPhonebook);
         })
-        .catch(error => {
-            console.log(error);
-            res.status(500).json({ error: "some internal error occured" });
-        });
+        .catch(error => next(error));
 })
 
-app.delete('/api/persons/:id', (req, res) => {
+app.delete('/api/persons/:id', (req, res, next) => {
     const id = req.params.id;
     Phonebook
         .findOneAndRemove({ _id: id })
@@ -92,11 +83,17 @@ app.delete('/api/persons/:id', (req, res) => {
             if (!entry) res.status(404).json({ error: `No person of id ${id} found.` });
             res.status(204).end();
         })
-        .catch(error => {
-            console.log(error);
-            res.status(500).json({ error: `some error occured` });
-        })
+        .catch(error => next(error))
 })
+
+const unknownEndpoint = (request, response) => {
+    response.status(404).send({ error: 'unknown endpoint' })
+}
+// handler of requests with unknown endpoint
+app.use(unknownEndpoint)
+
+// This middleware has to be the last to be loaded.
+app.use(errorHandler);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
