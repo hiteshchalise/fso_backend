@@ -13,7 +13,14 @@ const phonebookSchema = new mongoose.Schema({
     },
     number: {
         type: String,
-        required: true
+        minlength: 8,
+        validate: {
+            validator: function (v) {
+                return /(^\d{2}|\d{3})-(\d+$)/gm.test(v);
+            },
+            message: props => `${props.value} is not a valid phone number!`
+        },
+        required: [true, 'Phone number required']
     }
 });
 
