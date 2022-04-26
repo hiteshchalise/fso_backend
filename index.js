@@ -60,9 +60,6 @@ app.get('/api/persons/:id', (req, res, next) => {
 });
 
 app.post('/api/persons', (req, res, next) => {
-    if (!req.body.name) return res.status(400).json({ error: 'Name is missing' });
-    if (!req.body.number) return res.status(400).json({ error: 'Number is missing' });
-
     const phonebook = new Phonebook({
         name: req.body.name,
         number: req.body.number
@@ -76,10 +73,11 @@ app.post('/api/persons', (req, res, next) => {
 })
 
 app.put('/api/persons/:id', (req, res, next) => {
-    if (!req.body.name) return res.status(400).json({ error: 'Name is missing' });
-    if (!req.body.number) return res.status(400).json({ error: 'Number is missing' });
-
-    Phonebook.findByIdAndUpdate(req.params.id, { number: req.body.number }, { new: true })
+    Phonebook.findByIdAndUpdate(
+        req.params.id,
+        { number: req.body.number },
+        { new: true, runValidators: true, context: 'query' }
+    )
         .then(updatedEntry => {
             if (!updatedEntry) {
                 res.status(404).json({ error: "Name is not found on the entry." });
