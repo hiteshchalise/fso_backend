@@ -23,7 +23,7 @@ const Phonebook = mongoose.model('Phonebook', phonebookSchema);
 
 if (!process.argv[3]) {
     Phonebook.find({}).then(result => {
-        console.log("phonebook:");
+        console.log('phonebook:');
         result.forEach(entry => console.log(`${entry.name} ${entry.number}`));
         mongoose.connection.close();
     });
@@ -33,8 +33,8 @@ if (!process.argv[3]) {
         number: process.argv[4]
     });
 
-    newPhonebook.save().then(result => {
+    newPhonebook.save().then(() => {
         console.log(`added ${newPhonebook.name} number ${newPhonebook.number} to phonebook`);
         mongoose.connection.close();
-    })
+    });
 }
